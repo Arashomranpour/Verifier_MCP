@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VerifierMCP</title>
+<style>
+  :root{
+    --bg:#0a0c11; --panel:#12161f; --panel2:#161b26; --line:#232b3a; --ink:#e8edf6;
+    --muted:#8793a8; --brand:#8b7dff; --ok:#54e39b; --bad:#ff7a85; --chip:#1b2130;
+    --shadow:0 10px 36px rgba(0,0,0,.45); --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1100px 600px at 75% -12%,#1a1740 0%,var(--bg) 55%);
+       color:var(--ink);font:15px/1.55 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+       min-height:100vh;padding:30px 18px 70px}
+  .wrap{max-width:1080px;margin:0 auto}
+  header{display:flex;align-items:center;gap:14px}
+  .logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--brand),#5a8bff);
+        display:grid;place-items:center;font-size:22px;box-shadow:var(--shadow)}
+  h1{font-size:26px;margin:0;letter-spacing:-.4px}
+  .sub{color:var(--muted);margin:10px 0 18px;max-width:680px}
+  .sub b{color:var(--ink);font-weight:600}
+  .connect{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 15px;
+           font:12.5px/1.6 var(--mono);color:var(--muted);margin-bottom:22px;overflow:auto}
+  .connect b{color:var(--brand)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 17px;box-shadow:var(--shadow)}
+  .card h3{margin:0 0 3px;font-size:15px;display:flex;align-items:center;gap:8px}
+  .tag{font:11px var(--mono);color:var(--brand);background:var(--chip);border:1px solid var(--line);
+       border-radius:6px;padding:1px 7px}
+  .card p{margin:0 0 11px;color:var(--muted);font-size:12.5px}
+  label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:8px 0 4px}
+  textarea,input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+       border-radius:9px;padding:8px 10px;font:13px var(--mono);resize:vertical}
+  .row{display:flex;gap:9px} .row>div{flex:1}
+  button{margin-top:11px;background:linear-gradient(135deg,var(--brand),#5a8bff);color:#0a0a16;font-weight:700;
+       border:0;border-radius:9px;padding:9px 16px;font-size:13.5px;cursor:pointer}
+  button:hover{filter:brightness(1.08)}
+  .result{margin-top:11px;border-radius:10px;padding:10px 12px;font:12.5px/1.5 var(--mono);
+          white-space:pre-wrap;word-break:break-word;border:1px solid var(--line);background:#0d1119;display:none}
+  .result.show{display:block}
+  .verdict{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-family:inherit;margin-bottom:6px}
+  .verdict.ok{color:var(--ok)} .verdict.bad{color:var(--bad)}
+  .foot{color:var(--muted);font-size:12.5px;margin-top:24px;text-align:center}
+  @media(max-width:820px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">✓</div>
+    <div><h1>VerifierMCP</h1></div>
+  </header>
+  <p class="sub">An <b>MCP server</b> that gives any LLM the power to <b>check its own work</b>.
+    Five verification tools — symbolic math, sandboxed code, JSON-Schema, units, regex — callable
+    from Claude Desktop or any MCP client. This page runs the exact same tools so you can watch
+    them catch errors live.</p>
+
+  <div class="connect">
+    <span style="color:var(--ink)"># Connect to Claude Desktop (claude_desktop_config.json)</span><br>
+    "mcpServers": { "<b>verifier</b>": { "command": "python", "args": ["-m", "verifier_mcp.server"] } }
+  </div>
+
+  <div class="grid">
+    <div class="card" data-ep="verify_math">
+      <h3>verify_math <span class="tag">SymPy</span></h3>
+      <p>Catches the classic (x+1)² = x²+1 mistake — checks algebra symbolically.</p>
+      <label>Expression</label><textarea rows="1" data-f="expression">(x+1)**2</textarea>
+      <label>Claimed result</label><textarea rows="1" data-f="claimed_result">x**2 + 1</textarea>
+      <button>Verify</button>
+      <div class="result"></div>
+    </div>
+
+    <div class="card" data-ep="run_code">
+      <h3>run_code <span class="tag">sandbox</span></h3>
+      <p>Runs Python in an isolated subprocess and returns the real output.</p>
+      <label>Code</label><textarea rows="2" data-f="code">print(sum(range(101)))</textarea>
+      <button>Run &amp; verify</button>
+      <div class="result"></div>
+    </div>
+
+    <div class="card" data-ep="validate_schema">
+      <h3>validate_schema <span class="tag">JSON Schema</span></h3>
+      <p>Confirms structured output actually conforms — here <code>age</code> must be an integer.</p>
+      <label>Instance</label><textarea rows="2" data-f="instance">{"name": "Ada", "age": "forty"}</textarea>
+      <label>Schema</label><textarea rows="2" data-f="schema_json">{"type":"object","required":["age"],"properties":{"age":{"type":"integer"}}}</textarea>
+      <button>Validate</button>
+      <div class="result"></div>
+    </div>
+
+    <div class="card" data-ep="check_units">
+      <h3>check_units <span class="tag">Pint</span></h3>
+      <p>Dimensional analysis — evaluate a quantity and check it matches an expected unit.</p>
+      <div class="row">
+        <div><label>Expression</label><textarea rows="1" data-f="expression">5 meter / second * 2 second</textarea></div>
+        <div><label>Expected</label><textarea rows="1" data-f="expected_unit">meter</textarea></div>
+      </div>
+      <button>Check</button>
+      <div class="result"></div>
+    </div>
+
+    <div class="card" data-ep="test_regex" style="grid-column:1/-1">
+      <h3>test_regex <span class="tag">re</span></h3>
+      <p>Proves a regex matches what it should and rejects what it shouldn't, with capture groups.</p>
+      <div class="row">
+        <div><label>Pattern</label><textarea rows="1" data-f="pattern">^(\d{3})-(\d{4})$</textarea></div>
+        <div><label>Cases (JSON)</label><textarea rows="1" data-f="cases">[{"text":"123-4567","should_match":true},{"text":"12-4567","should_match":false}]</textarea></div>
+      </div>
+      <button>Test</button>
+      <div class="result"></div>
+    </div>
+  </div>
+
+  <div class="foot">Model Context Protocol · stdio + streamable HTTP · deployable via Amazon Bedrock AgentCore Gateway</div>
+</div>
+
+<script>
+const JSON_FIELDS = {validate_schema:["instance","schema_json"], test_regex:["cases"]};
+function verdict(ep, d){
+  if(ep==="verify_math")  return d.verified===false ? ["bad","✗ claim is FALSE"] : d.verified===true ? ["ok","✓ verified"] : ["ok","simplified"];
+  if(ep==="run_code")     return d.ok ? ["ok","✓ ran, exit 0"] : ["bad","✗ error / timeout"];
+  if(ep==="validate_schema") return d.valid ? ["ok","✓ valid"] : ["bad","✗ invalid"];
+  if(ep==="check_units")  return d.ok===false ? ["bad","✗ error"] : (d.matches_expected===false ? ["bad","✗ wrong unit"] : ["ok","✓ ok"]);
+  if(ep==="test_regex")   return d.all_passed ? ["ok","✓ all cases pass"] : ["bad","✗ some cases fail"];
+  return ["ok","done"];
+}
+async function run(card){
+  const ep = card.dataset.ep, body = {};
+  card.querySelectorAll("[data-f]").forEach(el=>{
+    let v = el.value;
+    if((JSON_FIELDS[ep]||[]).includes(el.dataset.f)){ try{ v = JSON.parse(v); }catch(e){} }
+    if(v!=="" ) body[el.dataset.f] = v;
+  });
+  const box = card.querySelector(".result");
+  try{
+    const r = await fetch("/api/"+ep,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    const d = await r.json();
+    const [cls,label] = verdict(ep,d);
+    box.innerHTML = `<div class="verdict ${cls}">${label}</div>`+JSON.stringify(d,null,2);
+    box.classList.add("show");
+  }catch(e){ box.textContent = "⚠ "+e; box.classList.add("show"); }
+}
+document.querySelectorAll(".card").forEach(card=>{
+  card.querySelector("button").addEventListener("click",()=>run(card));
+  run(card); // auto-run the example on load
+});
+</script>
+</body>
+</html>

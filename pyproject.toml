@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "verifier-mcp"
+version = "0.1.0"
+description = "An MCP server that lets any LLM check its own work: symbolic math, sandboxed code, JSON-Schema, units and regex verification."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Arash Omranpour" }]
+keywords = ["mcp", "model-context-protocol", "llm", "verification", "agents", "sympy", "jsonschema"]
+
+dependencies = [
+  "mcp>=2.0",
+  "sympy>=1.12",
+  "jsonschema>=4.20",
+  "pint>=0.23",
+]
+
+[project.optional-dependencies]
+web = ["fastapi>=0.110", "uvicorn>=0.29"]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.5", "fastapi>=0.110", "uvicorn>=0.29"]
+
+[project.scripts]
+verifier-mcp = "verifier_mcp.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/verifier_mcp"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+# re.I/re.M aliases are intentional and readable here.
+ignore = ["FURB167"]

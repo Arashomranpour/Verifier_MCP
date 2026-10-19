@@ -1,0 +1,6 @@
+mcp>=2.0
+sympy>=1.12
+jsonschema>=4.20
+pint>=0.23
+fastapi>=0.110
+uvicorn>=0.29
