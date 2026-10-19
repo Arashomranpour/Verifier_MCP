@@ -1,4 +1,4 @@
-mcp>=2.0
+mcp>=1.9,<2
 sympy>=1.12
 jsonschema>=4.20
 pint>=0.23

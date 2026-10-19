@@ -1,6 +1,7 @@
 """VerifierMCP — an MCP server that lets any LLM check its own work.
 
-Exposes five verification tools over the Model Context Protocol. Run it two ways:
+Exposes five verification tools over the Model Context Protocol, built with the official
+MCP Python SDK's FastMCP. Run it two ways:
 
     python -m verifier_mcp.server                 # stdio (Claude Desktop, MCP clients)
     python -m verifier_mcp.server --http          # streamable HTTP on :8000/mcp
@@ -13,13 +14,12 @@ from __future__ import annotations
 import argparse
 from typing import Any
 
-from mcp.server.mcpserver import MCPServer
+from mcp.server.fastmcp import FastMCP
 
 from verifier_mcp import tools
 
-server = MCPServer(
-    name="verifier-mcp",
-    version="0.1.0",
+mcp = FastMCP(
+    "verifier-mcp",
     instructions=(
         "Verification tools. Before stating a mathematical result, a regex, structured "
         "JSON, a unit calculation, or what a code snippet outputs, call the matching tool "
@@ -28,32 +28,32 @@ server = MCPServer(
 )
 
 
-@server.tool(description="Verify algebra/calculus symbolically (SymPy). "
-             "Pass an equation with '=', or an expression plus claimed_result.")
+@mcp.tool(description="Verify algebra/calculus symbolically (SymPy). "
+          "Pass an equation with '=', or an expression plus claimed_result.")
 def verify_math(expression: str, claimed_result: str | None = None) -> dict[str, Any]:
     return tools.verify_math(expression, claimed_result)
 
 
-@server.tool(description="Run a Python snippet in a sandboxed subprocess and return its "
-             "stdout/stderr. Use to check that code does what it claims.")
+@mcp.tool(description="Run a Python snippet in a sandboxed subprocess and return its "
+          "stdout/stderr. Use to check that code does what it claims.")
 def run_code(code: str, stdin: str = "", timeout: float = 5.0) -> dict[str, Any]:
     return tools.run_code(code, stdin=stdin, timeout=min(timeout, 15.0))
 
 
-@server.tool(description="Validate a JSON instance against a JSON Schema (Draft 2020-12). "
-             "Returns validity and a list of errors.")
+@mcp.tool(description="Validate a JSON instance against a JSON Schema (Draft 2020-12). "
+          "Returns validity and a list of errors.")
 def validate_schema(instance: Any, schema: Any) -> dict[str, Any]:
     return tools.validate_schema(instance, schema)
 
 
-@server.tool(description="Dimensional analysis (Pint). Evaluate a quantity expression like "
-             "'5 meter / second * 2 second'; optionally check it matches expected_unit.")
+@mcp.tool(description="Dimensional analysis (Pint). Evaluate a quantity expression like "
+          "'5 meter / second * 2 second'; optionally check it matches expected_unit.")
 def check_units(expression: str, expected_unit: str | None = None) -> dict[str, Any]:
     return tools.check_units(expression, expected_unit)
 
 
-@server.tool(description="Test a regex against labelled cases "
-             "[{text, should_match}]; returns per-case pass/fail and capture groups.")
+@mcp.tool(description="Test a regex against labelled cases "
+          "[{text, should_match}]; returns per-case pass/fail and capture groups.")
 def test_regex(pattern: str, cases: list[dict[str, Any]], flags: str = "") -> dict[str, Any]:
     return tools.test_regex(pattern, cases, flags)
 
@@ -66,11 +66,11 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.http:
-        server.settings.host = args.host
-        server.settings.port = args.port
-        server.run(transport="streamable-http")
+        mcp.settings.host = args.host
+        mcp.settings.port = args.port
+        mcp.run(transport="streamable-http")
     else:
-        server.run(transport="stdio")
+        mcp.run(transport="stdio")
 
 
 if __name__ == "__main__":

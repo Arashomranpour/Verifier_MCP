@@ -1,0 +1,5 @@
+# Extra deps for examples/self_checking_agent.py (Groq agent over MCP)
+-r requirements.txt
+langchain-mcp-adapters>=0.1
+langgraph>=0.2
+langchain-groq>=0.2

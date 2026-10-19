@@ -10,7 +10,7 @@
   <img src="docs/images/playground.png" alt="VerifierMCP playground catching errors live" width="880">
 </p>
 
-Built with the official **MCP Python SDK** (`mcp` 2.x). Works in **Claude Desktop** and any
+Built with the official **MCP Python SDK** (FastMCP). Works in **Claude Desktop** and any
 MCP client over **stdio**, or remotely over **streamable HTTP** (e.g. behind **Amazon Bedrock
 AgentCore Gateway**).
 
@@ -74,6 +74,34 @@ Restart Claude Desktop and ask it something like *"Is (x+1)² equal to x²+1? Us
 
 ---
 
+## Self-checking agent demo (Groq + MCP)
+
+[`examples/self_checking_agent.py`](examples/self_checking_agent.py) connects a **Groq** LLM to
+this server over **real MCP** (via `langchain-mcp-adapters`), instructs it to *verify before
+asserting*, and watches it catch its own mistake:
+
+```bash
+pip install -r requirements-demo.txt
+export GROQ_API_KEY=gsk_...                       # real Groq agent
+python examples/self_checking_agent.py
+
+python examples/self_checking_agent.py --offline  # no key: scripted LLM, REAL MCP verification
+```
+
+```text
+[offline] Question: Is (x+1)^2 equal to x^2 + 1? If not, what is the correct expansion?
+
+  [Assistant] draft answer: "(x+1)^2 = x**2 + 1"
+  → verify_math((x+1)**2, claimed_result=x**2 + 1)  [real MCP call]
+    MCP result: verified=False  —  expression simplifies to (x + 1)**2, not x**2 + 1
+  → verify_math((x+1)**2, claimed_result=x**2 + 2*x + 1)  [real MCP call]
+    MCP result: verified=True
+
+  [Assistant] Corrected: (x+1)^2 = x^2 + 2x + 1 — verified, not x^2 + 1.
+```
+
+---
+
 ## Deploy remotely (Amazon Bedrock AgentCore Gateway)
 
 The HTTP transport (`--http`, container in [`Dockerfile`](Dockerfile)) exposes a standard MCP
@@ -105,7 +133,7 @@ PYTHONPATH=src pytest -q      # 18 passed — tool logic + MCP protocol registra
 
 ## Tech stack
 
-**Model Context Protocol** (`mcp` 2.x) · **SymPy** · **jsonschema** · **Pint** · **FastAPI** ·
+**Model Context Protocol** (FastMCP) · **SymPy** · **jsonschema** · **Pint** · **FastAPI** ·
 **Docker** · **GitHub Actions** · Amazon Bedrock AgentCore Gateway–ready
 
 ## License
